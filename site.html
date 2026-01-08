@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocolo Gêmeos - Aeroporto Cumulonimbus</title>
+    <style>
+         :root {
+            --bg-color: #050510;
+            --glass-color: rgba(20, 30, 50, 0.8);
+            --text-main: #aaddff;
+            --text-alert: #ff4444;
+            --neon-blue: #00f3ff;
+            --neon-amber: #ffaa00;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.3);
+        }
+        /* CRT Effect Overlay */
+        
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        
+        h1,
+        h2 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--glass-color);
+            border: 1px solid var(--neon-blue);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        /* Timer */
+        
+        #timer {
+            font-size: 2.5rem;
+            color: var(--text-alert);
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            border: 2px solid var(--text-alert);
+            padding: 10px;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 5px var(--text-alert);
+            }
+            50% {
+                box-shadow: 0 0 20px var(--text-alert);
+            }
+            100% {
+                box-shadow: 0 0 5px var(--text-alert);
+            }
+        }
+        /* Role Selection */
+        
+        .role-select {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 50px;
+        }
+        
+        button {
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+        
+        button:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+        
+        .manual-btn {
+            border-color: #888;
+            color: #888;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        
+        .manual-btn:hover {
+            background: #333;
+            color: white;
+            box-shadow: none;
+        }
+        /* Stage 1: Turbine */
+        
+        .turbine-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .turbine {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 10px dashed;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .shape-btn {
+            font-size: 2rem;
+            width: 80px;
+            height: 80px;
+        }
+        /* Stage 2: Keypad */
+        
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .key-btn {
+            font-size: 1.5rem;
+            padding: 15px;
+        }
+        /* Stage 3: Colors */
+        
+        .color-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #000;
+            color: white;
+            border: 1px solid var(--neon-blue);
+            font-family: inherit;
+        }
+        
+        .environment-hint {
+            border-left: 5px solid;
+            padding-left: 15px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        /* Ending */
+        
+        .success {
+            color: #00ff00;
+            border-color: #00ff00;
+            text-align: center;
+        }
+        
+        .fail {
+            color: red;
+            border-color: red;
+            text-align: center;
+        }
+        /* Manuals */
+        
+        .manual-box {
+            border: 1px dashed var(--neon-amber);
+            padding: 15px;
+            margin: 15px 0;
+            color: var(--neon-amber);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container" id="app">
+
+        <div id="screen-select">
+            <h1>Protocolo Gêmeos</h1>
+            <p style="text-align: center;">"Dividam-se. A visão para a esquerda, a lógica para a direita."</p>
+            <div class="role-select">
+                <button onclick="startGame('fortuita')">SALA FORTUITA (ESQUERDA)</button>
+                <button onclick="startGame('pitufo')">SALA PITUFO (DIREITA)</button>
+            </div>
+        </div>
+
+        <div id="game-interface" class="hidden">
+            <div id="timer">05:00</div>
+            <h2 id="stage-title">ESTÁGIO 1: CALIBRAGEM</h2>
+            <hr style="border-color: #333">
+
+            <div id="stage-content"></div>
+
+            <div id="message-area" style="margin-top:20px; height: 20px; text-align: center; color: yellow;"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // ESTADO DO JOGO
+        let role = '';
+        let currentStage = 1;
+
+        // Timer ajustado para 5 minutos (300 segundos)
+        let timeLeft = 300;
+        let timerInterval;
+
+        // DADOS DOS PUZZLES
+
+        // Estágio 2: Símbolos
+        const symbolSequence = ['🐍', '⌛', '👁️'];
+        let currentInputSequence = [];
+
+        // Estágio 3: Cores
+        // Solução Original: LARANJA - AZUL - ROXO - BRANCO
+        // (Roxo é o oposto de amarelo)
+        const colorAnswer = ['laranja', 'azul', 'roxo', 'branco'];
+
+        // --- FUNÇÕES DE CONTROLE ---
+
+        function startGame(selectedRole) {
+            role = selectedRole;
+            document.getElementById('screen-select').classList.add('hidden');
+            document.getElementById('game-interface').classList.remove('hidden');
+
+            startTimer();
+            renderStage();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const seconds = (timeLeft % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${minutes}:${seconds}`;
+
+                if (timeLeft <= 0) {
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function renderStage() {
+            const content = document.getElementById('stage-content');
+            const title = document.getElementById('stage-title');
+            content.innerHTML = '';
+            document.getElementById('message-area').innerText = '';
+
+            // --- ESTÁGIO 1 ---
+            if (currentStage === 1) {
+                title.innerText = "ESTÁGIO 1: CALIBRAGEM ENERGÉTICA";
+
+                if (role === 'fortuita') {
+                    // FORTUITA: AÇÃO
+                    content.innerHTML = `
+                        <p>A turbina está instável. Informe a cor para a Sala Pitufo e aguarde instrução.</p>
+                        <div class="turbine-container">
+                            <div class="turbine" style="border-color: blue; box-shadow: 0 0 20px blue;"></div>
+                        </div>
+                        <div class="controls">
+                            <button class="shape-btn" onclick="checkStage1('quadrado')">■</button>
+                            <button class="shape-btn" onclick="checkStage1('redondo')">●</button>
+                            <button class="shape-btn" onclick="checkStage1('triangulo')">▲</button>
+                        </div>
+                    `;
+                } else {
+                    // PITUFO: INSTRUÇÃO
+                    content.innerHTML = `
+                        <div class="manual-box">
+                            <h3>MANUAL DE FLUXO</h3>
+                            <ul>
+                                <li>Luz da turbina <strong>VERMELHA</strong> → Ativar <span style="border:1px solid; padding:2px">■ QUADRADO</span></li>
+                                <li>Luz da turbina <strong>AZUL</strong> → Ativar <span style="border:1px solid; padding:2px">● REDONDO</span></li>
+                                <li>Luz <strong>PISCANDO</strong> → NÃO TOQUE EM NADA.</li>
+                            </ul>
+                        </div>
+                        <p style="color: #888; font-size: 0.8rem;">Aguarde a Sala Fortuita realizar o procedimento.</p>
+                        <button class="manual-btn" onclick="nextStage()">[SISTEMA] A SALA FORTUITA CONSEGUIU? (CLIQUE AQUI PARA AVANÇAR)</button>
+                    `;
+                }
+            }
+
+            // --- ESTÁGIO 2 ---
+            else if (currentStage === 2) {
+                title.innerText = "ESTÁGIO 2: NAVEGAÇÃO ASTRAL";
+
+                if (role === 'fortuita') {
+                    // FORTUITA: INSTRUÇÃO
+                    content.innerHTML = `
+                        <p>Projeção Holográfica Ativa. Descreva os símbolos na ordem da rota para a Sala Pitufo.</p>
+                        <div style="font-size: 3rem; text-align: center; letter-spacing: 20px; margin: 30px 0; border: 1px solid var(--neon-blue); padding: 20px;">
+                            🐍 ⌛ 👁️
+                        </div>
+                        <p style="color: #888; font-size: 0.8rem;">Aguarde a Sala Pitufo inserir a sequência.</p>
+                        <button class="manual-btn" onclick="nextStage()">[SISTEMA] A SALA PITUFO CONSEGUIU? (CLIQUE AQUI PARA AVANÇAR)</button>
+                    `;
+                } else {
+                    // PITUFO: AÇÃO
+                    const keys = ['🌪️', '🧿', '🐍', '⚓', '⌛', '🐛', '🕯️', '👁️', '🕸️', '💍', '🏺', '🎭'];
+                    let gridHtml = '<div class="keypad">';
+                    keys.forEach(sym => {
+                        gridHtml += `<button class="key-btn" onclick="checkStage2('${sym}')">${sym}</button>`;
+                    });
+                    gridHtml += '</div>';
+
+                    content.innerHTML = `
+                        <p>Insira a sequência de navegação ditada pela Sala Fortuita.</p>
+                        <div id="sequence-display" style="height: 30px; border-bottom: 2px solid #333; margin-bottom: 10px; font-size: 1.5rem; text-align:center;"></div>
+                        ${gridHtml}
+                        <button class="manual-btn" style="color:red; border-color:red;" onclick="resetStage2()">RESETAR SEQUÊNCIA</button>
+                    `;
+                }
+            }
+
+            // --- ESTÁGIO 3 ---
+            else if (currentStage === 3) {
+                title.innerText = "ESTÁGIO 3: CÓDIGO DO CAOS";
+
+                let instructions = '';
+                let environmentHint = '';
+
+                if (role === 'fortuita') {
+                    // FORTUITA VÊ: Regras 1 e 3.
+                    // VOLTOU A REGRA ORIGINAL NO SLOT 3 (COR OPOSTA)
+                    instructions = `
+                        <div class="manual-box">
+                            <p>> REGRA SLOT 1: Mistura de <strong>VERMELHO</strong> com a cor da Sala Vizinha.</p>
+                            <p>> REGRA SLOT 3: A cor <strong>OPOSTA</strong> à da Sala Vizinha.</p>
+                        </div>
+                    `;
+                    environmentHint = `
+                        <div class="environment-hint" style="border-color: blue;">
+                            SUA SALA ESTÁ PULSANDO UMA LUZ <strong>AZUL</strong>.
+                            <br>VOCÊ VÊ PELA JANELA A SALA PITUFO BRILHANDO EM <strong>AMARELO</strong>.
+                        </div>
+                    `;
+                } else {
+                    // PITUFO VÊ: Regras 2 e 4.
+                    instructions = `
+                        <div class="manual-box">
+                            <p>> REGRA SLOT 2: É exatamente a cor da Sala Vizinha.</p>
+                            <p>> REGRA SLOT 4: É sempre <strong>BRANCO</strong>.</p>
+                        </div>
+                    `;
+                    environmentHint = `
+                        <div class="environment-hint" style="border-color: yellow;">
+                            SUA SALA ESTÁ PULSANDO UMA LUZ <strong>AMARELA</strong>.
+                            <br>VOCÊ VÊ PELA JANELA A SALA FORTUITA BRILHANDO EM <strong>AZUL</strong>.
+                        </div>
+                    `;
+                }
+
+                content.innerHTML = `
+                    <p style="color:red">SINCRONIA TOTAL NECESSÁRIA. INSIRA O CÓDIGO FINAL NAS DUAS SALAS.</p>
+                    ${instructions}
+                    ${environmentHint}
+                    <div class="color-inputs">
+                        <select id="c1"><option value="">--</option><option value="vermelho">Vermelho</option><option value="azul">Azul</option><option value="amarelo">Amarelo</option><option value="verde">Verde</option><option value="laranja">Laranja</option><option value="roxo">Roxo</option><option value="branco">Branco</option></select>
+                        <select id="c2"><option value="">--</option><option value="vermelho">Vermelho</option><option value="azul">Azul</option><option value="amarelo">Amarelo</option><option value="verde">Verde</option><option value="laranja">Laranja</option><option value="roxo">Roxo</option><option value="branco">Branco</option></select>
+                        <select id="c3"><option value="">--</option><option value="vermelho">Vermelho</option><option value="azul">Azul</option><option value="amarelo">Amarelo</option><option value="verde">Verde</option><option value="laranja">Laranja</option><option value="roxo">Roxo</option><option value="branco">Branco</option></select>
+                        <select id="c4"><option value="">--</option><option value="vermelho">Vermelho</option><option value="azul">Azul</option><option value="amarelo">Amarelo</option><option value="verde">Verde</option><option value="laranja">Laranja</option><option value="roxo">Roxo</option><option value="branco">Branco</option></select>
+                    </div>
+                    <button style="width:100%; margin-top:20px;" onclick="checkStage3()">CONFIRMAR CÓDIGO DE SINCRONIA</button>
+                `;
+            }
+        }
+
+        // --- LÓGICA DE VALIDAÇÃO ---
+
+        function checkStage1(shape) {
+            if (shape === 'redondo') {
+                showMessage("ESTABILIZAÇÃO CONFIRMADA!", true);
+                setTimeout(nextStage, 1000);
+            } else {
+                showMessage("ERRO! CHOQUE ELÉTRICO!", false);
+                timeLeft -= 10;
+            }
+        }
+
+        function checkStage2(symbol) {
+            currentInputSequence.push(symbol);
+            document.getElementById('sequence-display').innerText = currentInputSequence.join(' ');
+
+            if (currentInputSequence.length === 3) {
+                if (JSON.stringify(currentInputSequence) === JSON.stringify(symbolSequence)) {
+                    showMessage("ROTA TRAÇADA!", true);
+                    setTimeout(nextStage, 1000);
+                } else {
+                    showMessage("ROTA INVÁLIDA! ERRO DE NAVEGAÇÃO!", false);
+                    setTimeout(resetStage2, 1000);
+                    timeLeft -= 10;
+                }
+            }
+        }
+
+        function resetStage2() {
+            currentInputSequence = [];
+            document.getElementById('sequence-display').innerText = '';
+        }
+
+        function checkStage3() {
+            const c1 = document.getElementById('c1').value;
+            const c2 = document.getElementById('c2').value;
+            const c3 = document.getElementById('c3').value;
+            const c4 = document.getElementById('c4').value;
+
+            const input = [c1, c2, c3, c4];
+
+            if (JSON.stringify(input) === JSON.stringify(colorAnswer)) {
+                gameWin();
+            } else {
+                showMessage("CÓDIGO INCORRETO! SISTEMA INSTÁVEL!", false);
+                timeLeft -= 20;
+            }
+        }
+
+        function nextStage() {
+            currentStage++;
+            renderStage();
+        }
+
+        function showMessage(msg, success) {
+            const area = document.getElementById('message-area');
+            area.innerText = msg;
+            area.style.color = success ? '#00ff00' : '#ff0000';
+
+            if (!success) {
+                document.querySelector('.container').style.transform = "translate(5px, 5px)";
+                setTimeout(() => {
+                    document.querySelector('.container').style.transform = "translate(0, 0)";
+                }, 100);
+            }
+        }
+
+        function gameWin() {
+            clearInterval(timerInterval);
+            document.getElementById('game-interface').innerHTML = `
+                <div class="success">
+                    <h1>ACESSO CONCEDIDO</h1>
+                    <p>AS PORTAS DA TORRE DE CONTROLE ESTÃO ABERTAS.</p>
+                    <p>TEMPO RESTANTE: ${document.getElementById('timer').innerText}</p>
+                </div>
+            `;
+        }
+
+        function gameOver() {
+            clearInterval(timerInterval);
+            document.getElementById('game-interface').innerHTML = `
+                <div class="fail">
+                    <h1>FALHA CRÍTICA</h1>
+                    <p>EJEÇÃO DE EMERGÊNCIA INICIADA...</p>
+                    <p>(VOCÊS CAEM NO BOSS CAÍDOS)</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>
